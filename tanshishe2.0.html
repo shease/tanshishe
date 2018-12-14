@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <meta name="viewport" content="maximum-scale=1.0,minimum-scale=1.0,user-scalable=0,width=device-width,initial-scale=1.0"/>
+    <style>
+        body{
+            background: black;
+        }
+        table{
+            border: 1px;
+            border-collapse: collapse;
+            border:solid white 1px;
+            margin: 0 auto;
+        }
+        tr{
+            height: 10px;
+
+        }
+        td{
+            width: 10px;
+            height: 10px;
+            border:solid white 1px;
+        }
+        .action{
+            margin-top: 10px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body onload="Snake.init()">
+    <table id="main"></table>
+    <div class="action"><button>按回车键开始游戏</button></div>
+    <script>
+        function $(id) {
+            return document.getElementById(id)
+        }
+        var Snake = {
+            color: ['red','yellow','green','gray','pink','purple'],  //初始化颜色
+            hang:50,
+            lie:50,
+            body:[],
+            direction:0,
+            speed:250,
+            food:10,
+            pause:true,
+            timer:null,
+            watch:null,
+            tbl:$('main'),
+            dirNum : [37,38,39,40],
+            //检测这个格子是不是已经被占用了
+            checkColor:function(x,y,colorIndex){
+                if(Snake.tbl.rows[x].cells[y].style.backgroundColor == ''){
+                    Snake.tbl.rows[x].cells[y].style.backgroundColor = colorIndex
+                }
+            },
+            checking:function(x,y){
+                var color = null
+                if(Snake.tbl.rows[x].cells[y].style.backgroundColor != ''){
+                  return color = Snake.tbl.rows[x].cells[y].style.backgroundColor
+                }else {
+                    return color
+                }
+            },
+            //初始化舌头的方法
+            initSnakeHead:function(){
+                let x = Math.floor(Math.random()*Snake.hang)
+                let y = Math.floor(Math.random()*Snake.lie)
+                Snake.body.push({x:x,y:y,color: 'blue'})
+                Snake.checkColor(x,y,'blue')
+            },
+            // 产生颜色块的方法
+             init:function () {
+                //初始化表格
+                for(let i = 0;i < Snake.hang;i++){
+                    let tr = Snake.tbl.insertRow(-1)
+                    for(let j = 0;j < Snake.lie;j++){
+                       let td = tr.insertCell(-1)
+                    }
+                }
+                //初始化食物
+                for(let i = 0;i < Snake.food;i++){
+                    let x = Math.floor(Math.random()*Snake.hang)
+                    let y = Math.floor(Math.random()*Snake.lie)
+                    let colorIndex =  Snake.color[(Math.floor(Math.random()*Snake.color.length))]
+                    Snake.checkColor(x,y,colorIndex)
+                }
+                //初始化蛇头
+                Snake.direction = Snake.dirNum[Math.floor(Math.random()*Snake.dirNum.length)]
+                console.log(Snake.direction)
+                Snake.initSnakeHead()
+             },
+             move:function(x,y){
+                 //下
+                 if(Snake.direction == 40){
+                    x = x+1
+                 //右
+                 }else if(Snake.direction == 39){
+                    y = y + 1
+                 //上
+                 }else if(Snake.direction == 38){
+                    x = x - 1
+                 // 左
+                 }else if(Snake.direction == 37){
+                     y = y - 1
+                 }
+                 return({x:x,y:y})
+             },
+             //计算移动之后的body长度
+             moveNextBody:function(){
+              Snake.timer = setInterval(function () {
+             //擦除蛇的身体
+              Snake.clear()
+               //  检测是不是装撞到了自己
+
+              //讨论蛇前面有东西还是没东西
+              Snake.hasThing()
+             // 绘制蛇
+              Snake.paint()
+             },Snake.speed)
+             },
+            //讨论蛇前面有东西还是没东西
+            hasThing:function(){
+                var bodyX= Snake.body[0].x
+                var bodyY= Snake.body[0].y
+                var point = Snake.move(bodyX,bodyY)
+                var x = point.x
+                var y = point.y
+                Snake.hit(x,y)
+                var color = Snake.tbl.rows[x].cells[y].style.backgroundColor  || null
+                if(color != null){
+                    Snake.body.unshift({x:x,y:y,color:color})
+                    console.log(Snake.body[0])
+                    console.log(Snake.body)
+                    if( Snake.food < 8){
+                        let x = Math.floor(Math.random()*Snake.hang)
+                        let y = Math.floor(Math.random()*Snake.lie)
+                        let colorIndex =  Snake.color[(Math.floor(Math.random()*Snake.color.length))]
+                        Snake.checkColor(x,y,colorIndex)
+                    }
+                }else {
+                    if(Snake.body.length == 1){
+                        Snake.body[0] = {x:x,y:y,color:'blue'}
+                    }else {
+                        var oneColord = Snake.body[0].color
+                        var firstHead = oneColord
+                        for(var i = 0;i < Snake.body.length - 1;i++){
+                            Snake.body[i].color = Snake.body[i+1].color
+                        }
+                        Snake.body.pop()
+                        Snake.body.unshift({x:x,y:y,color:firstHead})
+                    }
+                }
+            },
+            //碰撞检测
+            hit(x,y){
+                //检测是不是不是撞到了墙
+                if(x < 0 || y >= Snake.hang || y < 0 || x >= Snake.lie){
+                   alert('游戏结束')
+                   clearInterval(Snake.timer)
+                    return
+                }
+                for(var i = 1;i < Snake.body.length;i++){
+                    if(Snake.body.length !=1){
+                        if(Snake.body[i].x == Snake.body[0].x && Snake.body[i].y == Snake.body[0].y){
+                            alert('游戏结束')
+                            clearInterval(Snake.timer)
+                            return
+                        }
+                    }
+                }
+            },
+            // 重新绘制蛇的身体
+            paint:function(){
+                console.log(Snake.body)
+                for(var i = 0;i<Snake.body.length;i++){
+                    var x = Snake.body[i].x
+                    var y = Snake.body[i].y
+                    var colorIndex = Snake.body[i].color
+                    Snake.tbl.rows[x].cells[y].style.backgroundColor = colorIndex
+                     Snake.food =Snake.food - 1
+                }
+            },
+            // 擦除蛇的身体
+            clear:function(){
+                 for (var i = 0 ;i < Snake.body.length;i++){
+                     var x = Snake.body[i].x
+                     var y = Snake.body[i].y
+                     Snake.tbl.rows[x].cells[y].style.backgroundColor = ''
+                 }
+             },
+             //按下键盘做的事情
+             keyDown:document.onkeydown = function (e) {
+                        switch (e.keyCode) {
+                        // 按回车键
+                        case 13:
+                       if(Snake.pause){
+                           Snake.moveNextBody()
+                           Snake.pause = !Snake.pause
+                        }else{
+                            //绘制蛇下一步怎么走
+                            clearInterval(Snake.timer)
+                            Snake.pause = !Snake.pause
+                        }
+                        break;
+                        //按左方向键
+                        case 37:
+                        if(Snake.direction !=37 && Snake.direction !=39){
+                            clearInterval(Snake.timer)
+                            Snake.direction = 37
+                            if(true){
+                                //绘制蛇下一步怎么走
+                                Snake.moveNextBody()
+                            }
+                        }
+                       break;
+                        //按上方向键
+                        case 38:
+                        if(Snake.direction !=38 && Snake.direction !=40){
+                            clearInterval(Snake.timer)
+                             Snake.direction = 38
+                            if(true){
+                                //绘制蛇下一步怎么走
+                                Snake.moveNextBody()
+                            }
+                        }
+                        break;
+                        //按右方向键
+                        case 39:
+                        if(Snake.direction !=37 && Snake.direction !=39){
+                            clearInterval(Snake.timer)
+                             Snake.direction = 39
+                            if(true){
+                                //绘制蛇下一步怎么走
+                                Snake.moveNextBody()
+                            }
+                        }
+                            break;
+                        //按下方向键
+                        case 40:
+                        if(Snake.direction !=38 && Snake.direction != 40){
+                            clearInterval(Snake.timer)
+                            Snake.direction = 40
+                            if(true){
+                                //绘制蛇下一步怎么走
+                                Snake.moveNextBody()
+                            }
+                        }
+                            break
+                    }
+             }
+        }
+    </script>
+</body>
+</html>
